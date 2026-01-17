@@ -23,14 +23,15 @@ void PartitionCls::PeriodicRun()
     VorIlsMgr.PeriodicRun();
 }
 
+// Wire port connections between manager components
 void PartitionCls::InitRelations()
 {
-    // Forward: EgiLruMgr -> RadaltLruMgr
+    // EgiLruMgr sends EGI external data to RadaltLruMgr
     EgiMgr.GetEgiLruMgr().SetEgiOut(&RadaltMgr.GetRadaltLruMgr());
 
-    // Reverse: RadaltLruMgr -> EgiCmpCls
+    // RadaltLruMgr sends radar altimeter data to EgiCmp
     RadaltMgr.GetRadaltLruMgr().SetRadaltOut(&EgiMgr.GetEgiCmp());
 
-    // EgiCmp -> VorIlsLruMgr
+    // EgiCmp sends VOR/ILS navigation data to VorIlsLruMgr
     EgiMgr.GetEgiCmp().SetVorIlsOut(&VorIlsMgr.GetVorIlsLruMgr());
 }

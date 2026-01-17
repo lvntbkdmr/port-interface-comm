@@ -9,8 +9,10 @@ EgiMgrCls::~EgiMgrCls()
 {
 }
 
+// Wire internal port connections between sub-components
 void EgiMgrCls::InitRelations()
 {
+    // EgiLruMgr sends commands to EgiCmp
     EgiLruMgr.SetCommandOut(&EgiCmp);
 }
 
@@ -26,11 +28,13 @@ void EgiMgrCls::PeriodicRun()
     EgiCmp.PeriodicRun();
 }
 
+// Accessor for external port wiring
 EgiLruMgrCls& EgiMgrCls::GetEgiLruMgr()
 {
     return EgiLruMgr;
 }
 
+// Accessor for external port wiring
 EgiCmpCls& EgiMgrCls::GetEgiCmp()
 {
     return EgiCmp;

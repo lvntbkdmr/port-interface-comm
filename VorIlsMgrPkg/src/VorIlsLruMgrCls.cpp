@@ -16,6 +16,7 @@ void VorIlsLruMgrCls::PeriodicRun()
 {
 }
 
+// Receive VOR/ILS navigation data from EgiCmp
 void VorIlsLruMgrCls::SetEgiVorExtData(const EgiVorExtDataType& data)
 {
     (void)data;
