@@ -2,9 +2,12 @@
 #define EGICMP_H
 
 #include <RadaltExtDataIfc.h>
+#include <EgiCommandIfc.h>
+#include <EgiVorExtDataIfc.h>
 
 class EgiCmpCls:
-    public RadaltExtDataIfc
+    public RadaltExtDataIfc,
+    public EgiCommandIfc
 {
 public:
     EgiCmpCls();
@@ -13,14 +16,13 @@ public:
     void Initialize();
     void PeriodicRun();
 
-    void SetRadaltExtData(const RadaltExtDataType& data) override;
+    void SetVorIlsOut(EgiVorExtDataIfc* port);
 
-    const RadaltExtDataType& GetLastReceivedData() const;
-    int GetReceivedDataCount() const;
+    void SetRadaltExtData(const RadaltExtDataType& data) override;
+    void SetEgiCommand(const EgiCommandType& cmd) override;
 
 private:
-    RadaltExtDataType m_lastReceivedData{};
-    int m_receivedDataCount{0};
+    EgiVorExtDataIfc* m_vorIlsOut{nullptr};
 protected:
 };
 #endif

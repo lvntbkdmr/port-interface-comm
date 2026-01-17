@@ -13,12 +13,14 @@ void PartitionCls::Initialize()
 {
     EgiMgr.Initialize();
     RadaltMgr.Initialize();
+    VorIlsMgr.Initialize();
 }
 
 void PartitionCls::PeriodicRun()
 {
     EgiMgr.PeriodicRun();
     RadaltMgr.PeriodicRun();
+    VorIlsMgr.PeriodicRun();
 }
 
 void PartitionCls::InitRelations()
@@ -27,25 +29,8 @@ void PartitionCls::InitRelations()
     EgiMgr.GetEgiLruMgr().SetEgiOut(&RadaltMgr.GetRadaltLruMgr());
 
     // Reverse: RadaltLruMgr -> EgiCmpCls
-    RadaltMgr.GetRadaltLruMgr().SetRadaltOut(&EgiMgr.GetEgiLruMgr().GetEgiCmp());
-}
+    RadaltMgr.GetRadaltLruMgr().SetRadaltOut(&EgiMgr.GetEgiCmp());
 
-const EgiExtDataType& PartitionCls::GetLastReceivedEgiData() const
-{
-    return const_cast<RadaltMgrCls&>(RadaltMgr).GetRadaltLruMgr().GetLastReceivedData();
-}
-
-int PartitionCls::GetReceivedEgiDataCount() const
-{
-    return const_cast<RadaltMgrCls&>(RadaltMgr).GetRadaltLruMgr().GetReceivedDataCount();
-}
-
-const RadaltExtDataType& PartitionCls::GetLastReceivedRadaltData() const
-{
-    return const_cast<EgiMgrCls&>(EgiMgr).GetEgiLruMgr().GetEgiCmp().GetLastReceivedData();
-}
-
-int PartitionCls::GetReceivedRadaltDataCount() const
-{
-    return const_cast<EgiMgrCls&>(EgiMgr).GetEgiLruMgr().GetEgiCmp().GetReceivedDataCount();
+    // EgiCmp -> VorIlsLruMgr
+    EgiMgr.GetEgiCmp().SetVorIlsOut(&VorIlsMgr.GetVorIlsLruMgr());
 }

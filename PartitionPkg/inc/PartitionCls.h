@@ -5,9 +5,6 @@
 #include <RadaltMgrCls.h>
 #include <VorIlsMgrCls.h>
 
-#include <EgiExtDataIfc.h>
-#include <RadaltExtDataIfc.h>
-
 class PartitionCls
 {
 public:
@@ -17,12 +14,6 @@ public:
     void PeriodicRun();
 
     void InitRelations();
-
-    const EgiExtDataType& GetLastReceivedEgiData() const;
-    int GetReceivedEgiDataCount() const;
-
-    const RadaltExtDataType& GetLastReceivedRadaltData() const;
-    int GetReceivedRadaltDataCount() const;
 
 private:
     EgiMgrCls EgiMgr;

@@ -18,12 +18,7 @@ public:
 
     void SetRadaltOut(RadaltExtDataIfc* port);
 
-    const EgiExtDataType& GetLastReceivedData() const;
-    int GetReceivedDataCount() const;
-
 private:
-    EgiExtDataType m_lastReceivedData{};
-    int m_receivedDataCount{0};
     RadaltExtDataIfc* m_radaltOut;
 };
 #endif

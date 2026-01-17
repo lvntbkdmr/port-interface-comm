@@ -24,21 +24,10 @@ void RadaltLruMgrCls::PeriodicRun()
 
 void RadaltLruMgrCls::SetEgiExtData(const EgiExtDataType& data)
 {
-    m_lastReceivedData = data;
-    m_receivedDataCount++;
+    (void)data;
 }
 
 void RadaltLruMgrCls::SetRadaltOut(RadaltExtDataIfc* port)
 {
     m_radaltOut = port;
-}
-
-const EgiExtDataType& RadaltLruMgrCls::GetLastReceivedData() const
-{
-    return m_lastReceivedData;
-}
-
-int RadaltLruMgrCls::GetReceivedDataCount() const
-{
-    return m_receivedDataCount;
 }

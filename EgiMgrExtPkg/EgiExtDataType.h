@@ -6,4 +6,10 @@ struct EgiExtDataType
     int exampleField;
 };
 
+struct EgiVorExtDataType
+{
+    double latitude;
+    double longitude;
+};
+
 #endif

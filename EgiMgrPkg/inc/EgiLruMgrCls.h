@@ -1,9 +1,8 @@
 #ifndef EGILRUMGR_H
 #define EGILRUMGR_H
 
-#include <EgiCmpCls.h>
-
 #include <EgiExtDataIfc.h>
+#include <EgiCommandIfc.h>
 
 class EgiLruMgrCls
 {
@@ -15,12 +14,10 @@ public:
     void PeriodicRun();
 
     void SetEgiOut(EgiExtDataIfc* port);
-
-    EgiCmpCls& GetEgiCmp();
+    void SetCommandOut(EgiCommandIfc* port);
 
 private:
-    EgiCmpCls m_EgiCmpCls;
-    EgiExtDataIfc* m_egiOut;
-
+    EgiExtDataIfc* m_egiOut{nullptr};
+    EgiCommandIfc* m_commandOut{nullptr};
 };
 #endif
