@@ -15,6 +15,8 @@ public:
 
     void SetEgiExtData(const EgiExtDataType& data) override;
 
+    EgiExtDataIfc * GetItsRadaltEgiInPortEgiExtDataIfc();
+
 private:
 protected:
 };

@@ -16,3 +16,12 @@ void RadaltMgrCls::PeriodicRun()
 {
 }
 
+EgiExtDataIfc * RadaltMgrCls::GetItsRadaltEgiInPortEgiExtDataIfc()
+{
+    return ItsRadaltEgiInPortEgiExtDataIfc;
+}
+
+void RadaltMgrCls::InitRelations()
+{
+    ItsItsRadaltEgiInPortEgiExtDataIfc = RadaltLruMgr.GetItsRadaltEgiInPortEgiExtDataIfc();
+}
