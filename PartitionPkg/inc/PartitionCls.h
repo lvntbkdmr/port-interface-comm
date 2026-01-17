@@ -3,6 +3,7 @@
 
 #include <EgiMgrCls.h>
 #include <RadaltMgrCls.h>
+#include <VorIlsMgrCls.h>
 
 #include <EgiExtDataIfc.h>
 #include <RadaltExtDataIfc.h>
@@ -26,6 +27,7 @@ public:
 private:
     EgiMgrCls EgiMgr;
     RadaltMgrCls RadaltMgr;
+    VorIlsMgrCls VorIlsMgr;
 protected:
 };
 #endif

@@ -16,8 +16,6 @@ public:
 
     void SetEgiExtData(const EgiExtDataType& data) override;
 
-    EgiExtDataIfc* GetEgiIn();
-
     void SetRadaltOut(RadaltExtDataIfc* port);
 
     const EgiExtDataType& GetLastReceivedData() const;

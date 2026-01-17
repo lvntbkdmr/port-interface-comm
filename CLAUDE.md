@@ -11,11 +11,14 @@ clang++ -std=c++17 -c \
   -I EgiMgrExtPkg \
   -I PartitionPkg/inc \
   -I RadaltMgrPkg/inc \
+  -I RadaltMgrExtPkg \
   -I EgiCmpPkg/inc \
+  -I VorIlsMgrPkg/inc \
   EgiMgrPkg/src/*.cpp \
   EgiCmpPkg/src/*.cpp \
   PartitionPkg/src/*.cpp \
-  RadaltMgrPkg/src/*.cpp
+  RadaltMgrPkg/src/*.cpp \
+  VorIlsMgrPkg/src/*.cpp
 
 # Move object files to out directory
 mv *.o out/
@@ -27,7 +30,9 @@ clang++ -std=c++17 \
   -I EgiMgrExtPkg \
   -I PartitionPkg/inc \
   -I RadaltMgrPkg/inc \
+  -I RadaltMgrExtPkg \
   -I EgiCmpPkg/inc \
+  -I VorIlsMgrPkg/inc \
   -L /opt/homebrew/lib \
   -lgtest -lgtest_main -pthread \
   tests/test_*.cpp \
@@ -35,6 +40,7 @@ clang++ -std=c++17 \
   EgiCmpPkg/src/*.cpp \
   PartitionPkg/src/*.cpp \
   RadaltMgrPkg/src/*.cpp \
+  VorIlsMgrPkg/src/*.cpp \
   -o out/run_tests && ./out/run_tests
 
 # Run a single test suite
@@ -64,7 +70,7 @@ PartitionCls (top-level container)
 Components communicate through typed port interfaces using a simple naming convention:
 - Output ports: `m_egiOut`, `m_radaltOut` (member variables)
 - Setters: `SetEgiOut()`, `SetRadaltOut()`
-- Input port getters: `GetEgiIn()`, `GetRadaltIn()` (return `this`)
+- Input ports: C++ implicitly upcasts to interface pointers (e.g., `&radaltLruMgr` → `EgiExtDataIfc*`)
 
 Data flows from `EgiLruMgrCls` → `RadaltLruMgrCls` via the `EgiExtDataIfc` interface.
 

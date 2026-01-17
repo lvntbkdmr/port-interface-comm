@@ -22,11 +22,6 @@ void EgiCmpCls::SetRadaltExtData(const RadaltExtDataType& data)
     m_receivedDataCount++;
 }
 
-RadaltExtDataIfc* EgiCmpCls::GetRadaltIn()
-{
-    return this;
-}
-
 const RadaltExtDataType& EgiCmpCls::GetLastReceivedData() const
 {
     return m_lastReceivedData;

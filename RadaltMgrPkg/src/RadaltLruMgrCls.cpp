@@ -28,11 +28,6 @@ void RadaltLruMgrCls::SetEgiExtData(const EgiExtDataType& data)
     m_receivedDataCount++;
 }
 
-EgiExtDataIfc* RadaltLruMgrCls::GetEgiIn()
-{
-    return this;
-}
-
 void RadaltLruMgrCls::SetRadaltOut(RadaltExtDataIfc* port)
 {
     m_radaltOut = port;

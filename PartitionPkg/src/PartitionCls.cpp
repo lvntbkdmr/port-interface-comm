@@ -24,10 +24,10 @@ void PartitionCls::PeriodicRun()
 void PartitionCls::InitRelations()
 {
     // Forward: EgiLruMgr -> RadaltLruMgr
-    EgiMgr.GetEgiLruMgr().SetEgiOut(RadaltMgr.GetRadaltLruMgr().GetEgiIn());
+    EgiMgr.GetEgiLruMgr().SetEgiOut(&RadaltMgr.GetRadaltLruMgr());
 
     // Reverse: RadaltLruMgr -> EgiCmpCls
-    RadaltMgr.GetRadaltLruMgr().SetRadaltOut(EgiMgr.GetEgiLruMgr().GetEgiCmp().GetRadaltIn());
+    RadaltMgr.GetRadaltLruMgr().SetRadaltOut(&EgiMgr.GetEgiLruMgr().GetEgiCmp());
 }
 
 const EgiExtDataType& PartitionCls::GetLastReceivedEgiData() const

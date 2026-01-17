@@ -22,21 +22,15 @@ TEST_F(RadaltMgrClsTest, PeriodicRun) {
     SUCCEED();
 }
 
-TEST_F(RadaltMgrClsTest, InitRelationsIdempotent) {
-    // InitRelations is called in constructor, calling again should be safe
-    radaltMgr.InitRelations();
-    SUCCEED();
-}
-
-TEST_F(RadaltMgrClsTest, GetPortInterfaceViaLruMgr) {
-    // Access port via LRU manager
+TEST_F(RadaltMgrClsTest, ImplicitUpcastViaLruMgr) {
+    // C++ implicitly upcasts to base class pointers
     RadaltMgrCls mgr;
-    EgiExtDataIfc* ifc = mgr.GetRadaltLruMgr().GetEgiIn();
+    EgiExtDataIfc* ifc = &mgr.GetRadaltLruMgr();
     EXPECT_NE(ifc, nullptr);
 }
 
-TEST_F(RadaltMgrClsTest, GetPortInterface) {
-    EgiExtDataIfc* ifc = radaltMgr.GetRadaltLruMgr().GetEgiIn();
+TEST_F(RadaltMgrClsTest, ImplicitUpcast) {
+    EgiExtDataIfc* ifc = &radaltMgr.GetRadaltLruMgr();
     EXPECT_NE(ifc, nullptr);
 }
 

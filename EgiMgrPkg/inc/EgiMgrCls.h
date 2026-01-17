@@ -14,8 +14,6 @@ public:
     void Initialize();
     void PeriodicRun();
 
-    void InitRelations();
-
     EgiLruMgrCls& GetEgiLruMgr();
 
 private:

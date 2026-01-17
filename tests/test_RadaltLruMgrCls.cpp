@@ -36,8 +36,9 @@ TEST_F(RadaltLruMgrClsTest, SetEgiExtData) {
     SUCCEED();
 }
 
-TEST_F(RadaltLruMgrClsTest, GetPortInterface) {
-    EgiExtDataIfc* ifc = radaltLruMgr.GetEgiIn();
+TEST_F(RadaltLruMgrClsTest, ImplicitUpcastToInterface) {
+    // C++ implicitly upcasts to base class pointers
+    EgiExtDataIfc* ifc = &radaltLruMgr;
     EXPECT_EQ(ifc, &radaltLruMgr);
 }
 

@@ -2,7 +2,6 @@
 
 EgiMgrCls::EgiMgrCls(/* args */)
 {
-    InitRelations();
 }
 
 EgiMgrCls::~EgiMgrCls()
@@ -17,10 +16,6 @@ void EgiMgrCls::Initialize()
 void EgiMgrCls::PeriodicRun()
 {
     EgiLruMgr.PeriodicRun();
-}
-
-void EgiMgrCls::InitRelations()
-{
 }
 
 EgiLruMgrCls& EgiMgrCls::GetEgiLruMgr()
