@@ -23,7 +23,7 @@ protected:
     MockEgiExtDataIfcForMgr mockIfc;
 
     void SetUp() override {
-        egiMgr.GetEgiLruMgr().SetItsDataOutPortEgiExtDataIfc(&mockIfc);
+        egiMgr.GetEgiLruMgr().SetEgiOut(&mockIfc);
         egiMgr.InitRelations();
     }
 };
@@ -41,14 +41,14 @@ TEST_F(EgiMgrClsTest, Initialize) {
 TEST_F(EgiMgrClsTest, SetPortInterfaceViaLruMgr) {
     EgiMgrCls mgr;
     MockEgiExtDataIfcForMgr ifc;
-    mgr.GetEgiLruMgr().SetItsDataOutPortEgiExtDataIfc(&ifc);
+    mgr.GetEgiLruMgr().SetEgiOut(&ifc);
     SUCCEED();
 }
 
 TEST_F(EgiMgrClsTest, InitRelations) {
     EgiMgrCls mgr;
     MockEgiExtDataIfcForMgr ifc;
-    mgr.GetEgiLruMgr().SetItsDataOutPortEgiExtDataIfc(&ifc);
+    mgr.GetEgiLruMgr().SetEgiOut(&ifc);
     mgr.InitRelations();
     SUCCEED();
 }
@@ -65,7 +65,7 @@ TEST_F(EgiMgrClsTest, FullLifecycle) {
     EgiMgrCls mgr;
     MockEgiExtDataIfcForMgr ifc;
 
-    mgr.GetEgiLruMgr().SetItsDataOutPortEgiExtDataIfc(&ifc);
+    mgr.GetEgiLruMgr().SetEgiOut(&ifc);
     mgr.InitRelations();
     mgr.Initialize();
     mgr.PeriodicRun();

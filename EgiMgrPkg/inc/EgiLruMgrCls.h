@@ -14,14 +14,13 @@ public:
     void Initialize();
     void PeriodicRun();
 
-    void SetItsDataOutPortEgiExtDataIfc(EgiExtDataIfc* ifc);
+    void SetEgiOut(EgiExtDataIfc* port);
 
     EgiCmpCls& GetEgiCmp();
 
 private:
     EgiCmpCls m_EgiCmpCls;
-protected:
-    EgiExtDataIfc* ItsDataOutPortEgiExtDataIfc;
+    EgiExtDataIfc* m_egiOut;
 
 };
 #endif

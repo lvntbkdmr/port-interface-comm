@@ -23,7 +23,7 @@ protected:
     MockEgiExtDataIfc mockIfc;
 
     void SetUp() override {
-        egiLruMgr.SetItsDataOutPortEgiExtDataIfc(&mockIfc);
+        egiLruMgr.SetEgiOut(&mockIfc);
     }
 };
 
@@ -40,7 +40,7 @@ TEST_F(EgiLruMgrClsTest, Initialize) {
 TEST_F(EgiLruMgrClsTest, SetPortInterface) {
     EgiLruMgrCls mgr;
     MockEgiExtDataIfc ifc;
-    mgr.SetItsDataOutPortEgiExtDataIfc(&ifc);
+    mgr.SetEgiOut(&ifc);
     SUCCEED();
 }
 

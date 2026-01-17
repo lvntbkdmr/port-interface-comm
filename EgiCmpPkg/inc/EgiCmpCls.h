@@ -15,7 +15,7 @@ public:
 
     void SetRadaltExtData(const RadaltExtDataType& data) override;
 
-    RadaltExtDataIfc* GetItsEgiCmpRadaltInPortRadaltExtDataIfc();
+    RadaltExtDataIfc* GetRadaltIn();
 
     const RadaltExtDataType& GetLastReceivedData() const;
     int GetReceivedDataCount() const;

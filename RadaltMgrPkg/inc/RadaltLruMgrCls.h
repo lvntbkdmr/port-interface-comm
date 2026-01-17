@@ -16,9 +16,9 @@ public:
 
     void SetEgiExtData(const EgiExtDataType& data) override;
 
-    EgiExtDataIfc * GetItsRadaltEgiInPortEgiExtDataIfc();
+    EgiExtDataIfc* GetEgiIn();
 
-    void SetItsDataOutPortRadaltExtDataIfc(RadaltExtDataIfc* ifc);
+    void SetRadaltOut(RadaltExtDataIfc* port);
 
     const EgiExtDataType& GetLastReceivedData() const;
     int GetReceivedDataCount() const;
@@ -26,7 +26,6 @@ public:
 private:
     EgiExtDataType m_lastReceivedData{};
     int m_receivedDataCount{0};
-protected:
-    RadaltExtDataIfc* ItsDataOutPortRadaltExtDataIfc;
+    RadaltExtDataIfc* m_radaltOut;
 };
 #endif

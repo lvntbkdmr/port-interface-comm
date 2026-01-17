@@ -1,7 +1,5 @@
 #include <EgiLruMgrCls.h>
 
-#include <PortMacros.h>
-
 EgiLruMgrCls::EgiLruMgrCls()
 {
 }
@@ -15,9 +13,9 @@ void EgiLruMgrCls::Initialize()
     m_EgiCmpCls.Initialize();
 }
 
-void EgiLruMgrCls::SetItsDataOutPortEgiExtDataIfc(EgiExtDataIfc* ifc)
+void EgiLruMgrCls::SetEgiOut(EgiExtDataIfc* port)
 {
-    ItsDataOutPortEgiExtDataIfc = ifc;
+    m_egiOut = port;
 }
 
 void EgiLruMgrCls::PeriodicRun()
@@ -27,7 +25,7 @@ void EgiLruMgrCls::PeriodicRun()
     EgiExtDataType EgiExtData;
     EgiExtData.exampleField = 42; // Example data assignment
 
-    OUT_PORT(DataOutPort, EgiExtDataIfc)->SetEgiExtData(EgiExtData);
+    m_egiOut->SetEgiExtData(EgiExtData);
 }
 
 EgiCmpCls& EgiLruMgrCls::GetEgiCmp()

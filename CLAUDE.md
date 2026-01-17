@@ -61,8 +61,10 @@ PartitionCls (top-level container)
 
 ### Port Interface Pattern
 
-Components communicate through typed port interfaces. The `OUT_PORT` macro (in `PartitionPkg/inc/PortMacros.h`) expands port references:
-- `OUT_PORT(DataOutPort, EgiExtDataIfc)` → `ItsDataOutPortEgiExtDataIfc`
+Components communicate through typed port interfaces using a simple naming convention:
+- Output ports: `m_egiOut`, `m_radaltOut` (member variables)
+- Setters: `SetEgiOut()`, `SetRadaltOut()`
+- Input port getters: `GetEgiIn()`, `GetRadaltIn()` (return `this`)
 
 Data flows from `EgiLruMgrCls` → `RadaltLruMgrCls` via the `EgiExtDataIfc` interface.
 

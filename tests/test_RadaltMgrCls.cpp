@@ -31,12 +31,12 @@ TEST_F(RadaltMgrClsTest, InitRelationsIdempotent) {
 TEST_F(RadaltMgrClsTest, GetPortInterfaceViaLruMgr) {
     // Access port via LRU manager
     RadaltMgrCls mgr;
-    EgiExtDataIfc* ifc = mgr.GetRadaltLruMgr().GetItsRadaltEgiInPortEgiExtDataIfc();
+    EgiExtDataIfc* ifc = mgr.GetRadaltLruMgr().GetEgiIn();
     EXPECT_NE(ifc, nullptr);
 }
 
 TEST_F(RadaltMgrClsTest, GetPortInterface) {
-    EgiExtDataIfc* ifc = radaltMgr.GetRadaltLruMgr().GetItsRadaltEgiInPortEgiExtDataIfc();
+    EgiExtDataIfc* ifc = radaltMgr.GetRadaltLruMgr().GetEgiIn();
     EXPECT_NE(ifc, nullptr);
 }
 

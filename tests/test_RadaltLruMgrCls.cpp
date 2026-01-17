@@ -37,7 +37,7 @@ TEST_F(RadaltLruMgrClsTest, SetEgiExtData) {
 }
 
 TEST_F(RadaltLruMgrClsTest, GetPortInterface) {
-    EgiExtDataIfc* ifc = radaltLruMgr.GetItsRadaltEgiInPortEgiExtDataIfc();
+    EgiExtDataIfc* ifc = radaltLruMgr.GetEgiIn();
     EXPECT_EQ(ifc, &radaltLruMgr);
 }
 

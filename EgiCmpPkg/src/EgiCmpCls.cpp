@@ -22,7 +22,7 @@ void EgiCmpCls::SetRadaltExtData(const RadaltExtDataType& data)
     m_receivedDataCount++;
 }
 
-RadaltExtDataIfc* EgiCmpCls::GetItsEgiCmpRadaltInPortRadaltExtDataIfc()
+RadaltExtDataIfc* EgiCmpCls::GetRadaltIn()
 {
     return this;
 }
