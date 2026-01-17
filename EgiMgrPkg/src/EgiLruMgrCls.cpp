@@ -15,7 +15,7 @@ void EgiLruMgrCls::Initialize()
     m_EgiCmpCls.Initialize();
 }
 
-void EgiLruMgrCls::setItsDataOutPortEgiExtDataIfc(EgiExtDataIfc* ifc)
+void EgiLruMgrCls::SetItsDataOutPortEgiExtDataIfc(EgiExtDataIfc* ifc)
 {
     ItsDataOutPortEgiExtDataIfc = ifc;
 }
@@ -30,3 +30,7 @@ void EgiLruMgrCls::PeriodicRun()
     OUT_PORT(DataOutPort, EgiExtDataIfc)->SetEgiExtData(EgiExtData);
 }
 
+EgiCmpCls& EgiLruMgrCls::GetEgiCmp()
+{
+    return m_EgiCmpCls;
+}

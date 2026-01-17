@@ -2,7 +2,6 @@
 #define EGIMGR_H
 
 #include <EgiLruMgrCls.h>
-#include <EgiExtDataIfc.h>
 
 class EgiMgrCls
 {
@@ -17,13 +16,10 @@ public:
 
     void InitRelations();
 
-    void SetItsDataOutPortEgiExtDataIfc(EgiExtDataIfc* ifc);
+    EgiLruMgrCls& GetEgiLruMgr();
 
 private:
     EgiLruMgrCls EgiLruMgr;
-
-protected:
-    EgiExtDataIfc * ItsDataOutPortEgiExtDataIfc;
 };
 
 #endif

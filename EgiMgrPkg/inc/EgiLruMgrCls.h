@@ -14,7 +14,9 @@ public:
     void Initialize();
     void PeriodicRun();
 
-    void setItsDataOutPortEgiExtDataIfc(EgiExtDataIfc* ifc);
+    void SetItsDataOutPortEgiExtDataIfc(EgiExtDataIfc* ifc);
+
+    EgiCmpCls& GetEgiCmp();
 
 private:
     EgiCmpCls m_EgiCmpCls;

@@ -15,3 +15,24 @@ void EgiCmpCls::Initialize()
 void EgiCmpCls::PeriodicRun()
 {
 }
+
+void EgiCmpCls::SetRadaltExtData(const RadaltExtDataType& data)
+{
+    m_lastReceivedData = data;
+    m_receivedDataCount++;
+}
+
+RadaltExtDataIfc* EgiCmpCls::GetItsEgiCmpRadaltInPortRadaltExtDataIfc()
+{
+    return this;
+}
+
+const RadaltExtDataType& EgiCmpCls::GetLastReceivedData() const
+{
+    return m_lastReceivedData;
+}
+
+int EgiCmpCls::GetReceivedDataCount() const
+{
+    return m_receivedDataCount;
+}

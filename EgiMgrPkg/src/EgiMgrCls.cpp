@@ -21,12 +21,9 @@ void EgiMgrCls::PeriodicRun()
 
 void EgiMgrCls::InitRelations()
 {
-    ItsDataOutPortEgiExtDataIfc = nullptr;
 }
 
-void EgiMgrCls::SetItsDataOutPortEgiExtDataIfc(EgiExtDataIfc* ifc)
+EgiLruMgrCls& EgiMgrCls::GetEgiLruMgr()
 {
-    ItsDataOutPortEgiExtDataIfc = ifc;
+    return EgiLruMgr;
 }
-
-

@@ -1,7 +1,8 @@
 #include <RadaltMgrCls.h>
 
-RadaltMgrCls::RadaltMgrCls(/* args */)
+RadaltMgrCls::RadaltMgrCls()
 {
+    InitRelations();
 }
 
 RadaltMgrCls::~RadaltMgrCls()
@@ -14,14 +15,14 @@ void RadaltMgrCls::Initialize()
 
 void RadaltMgrCls::PeriodicRun()
 {
-}
-
-EgiExtDataIfc * RadaltMgrCls::GetItsRadaltEgiInPortEgiExtDataIfc()
-{
-    return ItsRadaltEgiInPortEgiExtDataIfc;
+    RadaltLruMgr.PeriodicRun();
 }
 
 void RadaltMgrCls::InitRelations()
 {
-    ItsItsRadaltEgiInPortEgiExtDataIfc = RadaltLruMgr.GetItsRadaltEgiInPortEgiExtDataIfc();
+}
+
+RadaltLruMgrCls& RadaltMgrCls::GetRadaltLruMgr()
+{
+    return RadaltLruMgr;
 }

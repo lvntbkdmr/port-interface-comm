@@ -14,13 +14,11 @@ public:
     void Initialize();
     void PeriodicRun();
 
-    EgiExtDataIfc * GetItsRadaltEgiInPortEgiExtDataIfc();
-
-
     void InitRelations();
+
+    RadaltLruMgrCls& GetRadaltLruMgr();
+
 private:
     RadaltLruMgrCls RadaltLruMgr;
-protected:
-    EgiExtDataIfc * ItsItsRadaltEgiInPortEgiExtDataIfc;
 };
 #endif

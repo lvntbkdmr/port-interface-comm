@@ -1,6 +1,8 @@
 #include <RadaltLruMgrCls.h>
 
-RadaltLruMgrCls::RadaltLruMgrCls()
+#include <PortMacros.h>
+
+RadaltLruMgrCls::RadaltLruMgrCls() : ItsDataOutPortRadaltExtDataIfc(nullptr)
 {
 }
 
@@ -14,15 +16,36 @@ void RadaltLruMgrCls::Initialize()
 
 void RadaltLruMgrCls::PeriodicRun()
 {
+    if (ItsDataOutPortRadaltExtDataIfc != nullptr) {
+        RadaltExtDataType RadaltExtData;
+        RadaltExtData.altitudeField = 100; // Example altitude data
+
+        OUT_PORT(DataOutPort, RadaltExtDataIfc)->SetRadaltExtData(RadaltExtData);
+    }
 }
 
 void RadaltLruMgrCls::SetEgiExtData(const EgiExtDataType& data)
 {
-    // Implementation for handling the EGI external data
+    m_lastReceivedData = data;
+    m_receivedDataCount++;
 }
 
 EgiExtDataIfc * RadaltLruMgrCls::GetItsRadaltEgiInPortEgiExtDataIfc()
 {
-    // Implementation to return the EGI external data interface
-    return this; // Placeholder return
+    return this;
+}
+
+void RadaltLruMgrCls::SetItsDataOutPortRadaltExtDataIfc(RadaltExtDataIfc* ifc)
+{
+    ItsDataOutPortRadaltExtDataIfc = ifc;
+}
+
+const EgiExtDataType& RadaltLruMgrCls::GetLastReceivedData() const
+{
+    return m_lastReceivedData;
+}
+
+int RadaltLruMgrCls::GetReceivedDataCount() const
+{
+    return m_receivedDataCount;
 }
