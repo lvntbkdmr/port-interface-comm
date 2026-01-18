@@ -4,51 +4,48 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build Commands
 
-### CMake Build (Recommended)
+### Host Build (Development & Testing)
 
 ```bash
-# Configure and build all libraries and tests
-mkdir build && cd build
-cmake ..
-cmake --build .
+# Configure and build with tests
+cmake -B build -DBUILD_TESTS=ON
+cmake --build build
 
 # Run all tests
-ctest --output-on-failure
+cd build && ctest --output-on-failure
 
-# Run a single test suite
-./tests/run_tests --gtest_filter=IntegrationTest.*
+# Run specific test suite
+ctest -R EgiCmpClsTest
 
-# Run a single test
-./tests/run_tests --gtest_filter=IntegrationTest.PartitionConstruction
+# Run integration tests only
+ctest -R IntegrationTest
 
-# Build without tests
-cmake -DBUILD_TESTS=OFF ..
-cmake --build .
+# List all available tests
+ctest -N
 ```
 
-### Manual Build (Legacy)
+### Cross-Compilation (Target Deployment)
 
 ```bash
-# Compile and run all tests
-clang++ -std=c++17 \
-  -I /opt/homebrew/include \
-  -I EgiMgrPkg/inc \
-  -I EgiMgrExtPkg \
-  -I EgiCmpPkg/inc \
-  -I EgiCmpExtPkg \
-  -I PartitionPkg/inc \
-  -I RadaltMgrPkg/inc \
-  -I RadaltMgrExtPkg \
-  -I VorIlsMgrPkg/inc \
-  -L /opt/homebrew/lib \
-  -lgtest -lgtest_main -pthread \
-  tests/test_*.cpp \
-  EgiMgrPkg/src/*.cpp \
-  EgiCmpPkg/src/*.cpp \
-  PartitionPkg/src/*.cpp \
-  RadaltMgrPkg/src/*.cpp \
-  VorIlsMgrPkg/src/*.cpp \
-  -o out/run_tests && ./out/run_tests
+# Copy and customize toolchain file
+cp cmake/toolchain-target.cmake.example cmake/toolchain-target.cmake
+# Edit with your cross-compiler paths
+
+# Build for target (tests disabled automatically)
+cmake -B build-target -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-target.cmake
+cmake --build build-target
+```
+
+### Build Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `BUILD_TESTS` | ON | Build unit and integration tests |
+| `USE_VENDORED_GTEST` | ON | Use GoogleTest from third_party/ |
+
+```bash
+# Use system GoogleTest instead of vendored
+cmake -B build -DBUILD_TESTS=ON -DUSE_VENDORED_GTEST=OFF
 ```
 
 ## Architecture
@@ -71,8 +68,8 @@ PartitionCls (top-level container)
 ### Port Interface Pattern
 
 Components communicate through typed port interfaces using a simple naming convention:
-- Output ports: `m_egiOut`, `m_radaltOut` (member variables)
-- Setters: `SetEgiOut()`, `SetRadaltOut()`
+- Output ports: `m_egiOut`, `m_radaltOut`, `m_commandOut` (member variables)
+- Setters: `SetEgiOut()`, `SetRadaltOut()`, `SetCommandOut()`
 - Input ports: C++ implicitly upcasts to interface pointers (e.g., `&radaltLruMgr` → `EgiExtDataIfc*`)
 
 ### Lifecycle Methods
@@ -84,10 +81,12 @@ All manager classes follow a consistent lifecycle:
 
 ### Key Interfaces
 
-- `EgiExtDataIfc` - Abstract interface for receiving EGI external data
-- `EgiCommandIfc` - Abstract interface for receiving EGI commands
-- `RadaltExtDataIfc` - Abstract interface for receiving radar altimeter data
-- `EgiVorExtDataIfc` - Abstract interface for receiving VOR/ILS navigation data
+| Interface | Location | Description |
+|-----------|----------|-------------|
+| EgiExtDataIfc | EgiMgrExtPkg/ | Receiving EGI external data |
+| EgiCommandIfc | EgiMgrExtPkg/ | Receiving EGI commands |
+| RadaltExtDataIfc | RadaltMgrExtPkg/ | Receiving radar altimeter data |
+| EgiVorExtDataIfc | EgiCmpExtPkg/ | Receiving VOR/ILS navigation data |
 
 ### Package Structure
 
@@ -103,3 +102,21 @@ Each package is a separate CMake library project:
 | RadaltMgrPkg | Library | Radar altimeter manager implementation |
 | VorIlsMgrPkg | Library | VOR/ILS manager implementation |
 | PartitionPkg | Library | Top-level partition container |
+
+### Test Structure
+
+Unit tests are located in each package's `tests/` directory:
+
+| Package | Test Executable | Test Suites |
+|---------|-----------------|-------------|
+| EgiCmpPkg/tests | EgiCmpPkg_tests | EgiCmpClsTest |
+| EgiMgrPkg/tests | EgiMgrPkg_tests | EgiLruMgrClsTest, EgiMgrClsTest |
+| EgiMgrExtPkg/tests | EgiMgrExtPkg_tests | EgiExtDataTypeTest |
+| RadaltMgrPkg/tests | RadaltMgrPkg_tests | RadaltLruMgrClsTest, RadaltMgrClsTest |
+| PartitionPkg/tests | PartitionPkg_tests | PartitionClsTest |
+| tests/ | integration_tests | IntegrationTest |
+
+### Dependencies
+
+- GoogleTest is vendored in `third_party/googletest/` for offline builds
+- No external dependencies required for intranet development
