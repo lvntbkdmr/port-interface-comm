@@ -21,7 +21,7 @@ add_subdirectory(PartitionPkg)
 
 # Tests
 if(BUILD_TESTS)
-    enable_testing()
+    include(CTest)  # Creates DartConfiguration.tcl and enables testing
 
     # GoogleTest setup
     if(USE_VENDORED_GTEST AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/CMakeLists.txt")
