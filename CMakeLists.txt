@@ -21,5 +21,12 @@ add_subdirectory(PartitionPkg)
 # Tests
 if(BUILD_TESTS)
     enable_testing()
+    # Integration tests
     add_subdirectory(tests)
+    # Unit tests for each package
+    add_subdirectory(EgiMgrExtPkg/tests)
+    add_subdirectory(EgiCmpPkg/tests)
+    add_subdirectory(EgiMgrPkg/tests)
+    add_subdirectory(RadaltMgrPkg/tests)
+    add_subdirectory(PartitionPkg/tests)
 endif()

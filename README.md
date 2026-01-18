@@ -86,3 +86,50 @@ Components communicate through typed port interfaces:
 | EgiCommandIfc | EgiMgrExtPkg/EgiCommandIfc.h |
 | RadaltExtDataIfc | RadaltMgrExtPkg/RadaltExtDataIfc.h |
 | EgiVorExtDataIfc | EgiCmpExtPkg/EgiVorExtDataIfc.h |
+
+## Building
+
+```bash
+# Configure and build
+mkdir -p build && cd build
+cmake .. -DBUILD_TESTS=ON
+cmake --build .
+```
+
+## Testing
+
+Unit tests are located in each package's `tests/` directory. Integration tests are in the central `tests/` directory.
+
+```bash
+# Run all tests (from build directory)
+ctest
+
+# Run all tests with output
+ctest --output-on-failure
+
+# Run a specific package's tests
+./EgiCmpPkg/tests/EgiCmpPkg_tests
+./EgiMgrPkg/tests/EgiMgrPkg_tests
+./RadaltMgrPkg/tests/RadaltMgrPkg_tests
+./PartitionPkg/tests/PartitionPkg_tests
+
+# Run tests matching a pattern
+ctest -R EgiCmpClsTest
+ctest -R IntegrationTest
+
+# List all available tests
+ctest -N
+```
+
+### Test Structure
+
+| Package | Test File | Test Suite |
+|---------|-----------|------------|
+| EgiCmpPkg | test_EgiCmpCls.cpp | EgiCmpClsTest |
+| EgiMgrPkg | test_EgiLruMgrCls.cpp | EgiLruMgrClsTest |
+| EgiMgrPkg | test_EgiMgrCls.cpp | EgiMgrClsTest |
+| EgiMgrExtPkg | test_EgiExtDataType.cpp | EgiExtDataTypeTest |
+| RadaltMgrPkg | test_RadaltLruMgrCls.cpp | RadaltLruMgrClsTest |
+| RadaltMgrPkg | test_RadaltMgrCls.cpp | RadaltMgrClsTest |
+| PartitionPkg | test_PartitionCls.cpp | PartitionClsTest |
+| tests/ | test_Integration.cpp | IntegrationTest |
