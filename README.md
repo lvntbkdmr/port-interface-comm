@@ -26,6 +26,8 @@ Components communicate through typed port interfaces:
 - **Input ports**: Classes implement interfaces and receive data via virtual methods
 - **Wiring**: Done in `InitRelations()` methods, called from constructors
 
+For step-by-step instructions on creating new port connections, see the [Port Interface Guide](docs/PORT_INTERFACE_GUIDE.md).
+
 ## Communication Flows
 
 ```
