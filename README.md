@@ -30,6 +30,11 @@ Components communicate through typed port interfaces:
 - [Port Interface Guide](docs/PORT_INTERFACE_GUIDE.md) - Step-by-step instructions for creating new port connections
 - [Migration Guide](docs/MIGRATION_GUIDE.md) - Converting from the old macro-based pattern to the new simplified pattern
 
+**Claude Code Skills (for automated migration):**
+- `/migrate-scan` - Scan codebase to identify classes needing migration
+- `/migrate-port <ClassName>` - Migrate a single class to the new pattern
+- `/migrate-wiring` - Update PartitionCls to use direct port wiring
+
 ## Communication Flows
 
 ```
