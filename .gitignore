@@ -1,0 +1,20 @@
+# Build directories
+build/
+out/
+
+# IDE/Editor
+.clangd
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compiled files
+*.o
+*.a
+*.so
+*.dylib
+
+# Executables
+run_tests
