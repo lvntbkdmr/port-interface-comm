@@ -89,16 +89,61 @@ Components communicate through typed port interfaces:
 
 ## Building
 
+### Host Build (for development and testing)
+
+Build natively on the development machine to run unit tests:
+
 ```bash
-# Configure and build
-mkdir -p build && cd build
+# Windows (cmd)
+mkdir build-host
+cd build-host
 cmake .. -DBUILD_TESTS=ON
 cmake --build .
+
+# Windows (PowerShell)
+cmake -B build-host -DBUILD_TESTS=ON
+cmake --build build-host
+
+# Linux/macOS
+cmake -B build-host -DBUILD_TESTS=ON
+cmake --build build-host
 ```
+
+### Cross-Compilation (for target deployment)
+
+Build for the target architecture without tests:
+
+```bash
+# Copy and customize the toolchain file
+cp cmake/toolchain-target.cmake.example cmake/toolchain-target.cmake
+# Edit cmake/toolchain-target.cmake with your cross-compiler paths
+
+# Cross-compile
+cmake -B build-target -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-target.cmake
+cmake --build build-target
+```
+
+### Build Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `BUILD_TESTS` | ON | Build unit and integration tests |
+| `USE_VENDORED_GTEST` | ON | Use GoogleTest from third_party/ (for offline builds) |
+
+```bash
+# Example: Use system GoogleTest instead of vendored
+cmake -B build -DBUILD_TESTS=ON -DUSE_VENDORED_GTEST=OFF
+```
+
+### Offline/Intranet Development
+
+This project includes GoogleTest in `third_party/` for environments without internet access. The vendored GoogleTest is used by default, requiring no external downloads.
 
 ## Testing
 
 Unit tests are located in each package's `tests/` directory. Integration tests are in the central `tests/` directory.
+
+**Note:** Tests are designed to run on the host machine only. When cross-compiling, tests are automatically disabled.
 
 ```bash
 # Run all tests (from build directory)
