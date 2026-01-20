@@ -1,6 +1,7 @@
 # Build directories
 build/
 out/
+compile_commands.json
 
 # IDE/Editor
 .clangd

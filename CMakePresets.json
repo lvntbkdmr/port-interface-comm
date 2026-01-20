@@ -1,0 +1,27 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "dev-ninja-debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev-build",
+      "configurePreset": "dev-ninja-debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "dev-test",
+      "configurePreset": "dev-ninja-debug",
+      "output": { "outputOnFailure": true }
+    }
+  ]
+}
