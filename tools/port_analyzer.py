@@ -67,6 +67,110 @@ def create_parser() -> Parser:
     return parser
 
 
+def parse_header(parser: Parser, file_path: Path) -> ClassInfo | None:
+    """
+    Parse a C++ header file and extract class information.
+
+    Returns ClassInfo or None if no class found.
+    """
+    content = file_path.read_bytes()
+    tree = parser.parse(content)
+    root = tree.root_node
+
+    # Find class_specifier node
+    class_node = None
+    for node in root.children:
+        if node.type == "class_specifier":
+            class_node = node
+            break
+        # Handle case where class is inside other constructs
+        for child in node.children:
+            if child.type == "class_specifier":
+                class_node = child
+                break
+
+    if class_node is None:
+        return None
+
+    # Extract class name
+    class_name = None
+    base_classes = []
+    members = []
+    port_members = []
+
+    for child in class_node.children:
+        if child.type == "type_identifier":
+            class_name = content[child.start_byte:child.end_byte].decode()
+
+        elif child.type == "base_class_clause":
+            # Extract base classes
+            for base_child in child.children:
+                if base_child.type == "type_identifier":
+                    base_name = content[base_child.start_byte:base_child.end_byte].decode()
+                    base_classes.append(base_name)
+
+        elif child.type == "field_declaration_list":
+            # Parse class body for members
+            _parse_class_body(content, child, members, port_members)
+
+    if class_name is None:
+        return None
+
+    return ClassInfo(
+        name=class_name,
+        header_path=file_path,
+        base_classes=base_classes,
+        members=members,
+        port_members=port_members,
+    )
+
+
+def _parse_class_body(
+    content: bytes,
+    body_node,
+    members: list[MemberInfo],
+    port_members: list[str],
+) -> None:
+    """Parse class body for member declarations."""
+    for node in body_node.children:
+        if node.type == "field_declaration":
+            _parse_field_declaration(content, node, members, port_members)
+        elif node.type == "access_specifier":
+            continue  # Skip public/private/protected
+
+
+def _parse_field_declaration(
+    content: bytes,
+    field_node,
+    members: list[MemberInfo],
+    port_members: list[str],
+) -> None:
+    """Parse a field declaration to extract member info."""
+    type_name = None
+    member_name = None
+    is_pointer = False
+
+    for child in field_node.children:
+        if child.type == "type_identifier":
+            type_name = content[child.start_byte:child.end_byte].decode()
+        elif child.type == "field_identifier":
+            member_name = content[child.start_byte:child.end_byte].decode()
+        elif child.type == "pointer_declarator":
+            is_pointer = True
+            # Get the identifier from pointer declarator
+            for pc in child.children:
+                if pc.type == "field_identifier":
+                    member_name = content[pc.start_byte:pc.end_byte].decode()
+
+    if type_name and member_name:
+        # Check if it's a port member (Its*Port* pattern)
+        if member_name.startswith("Its") and "Port" in member_name:
+            port_members.append(member_name)
+        # Check if it's a component member (ends with Cls, not a pointer)
+        elif type_name.endswith("Cls") and not is_pointer:
+            members.append(MemberInfo(name=member_name, type_name=type_name))
+
+
 def scan_project(project_root: Path) -> ScannedFiles:
     """
     Scan project for C++ header and implementation files.
@@ -108,10 +212,16 @@ def main() -> int:
 
     # Scan for files
     scanned = scan_project(project_root)
-    print(f"Found {len(scanned.headers)} headers, {len(scanned.implementations)} implementations")
+    parser = create_parser()
 
+    # Parse all headers
     for h in sorted(scanned.headers):
-        print(f"  Header: {h.relative_to(project_root)}")
+        info = parse_header(parser, h)
+        if info:
+            print(f"{info.name}:")
+            print(f"  bases: {info.base_classes}")
+            print(f"  members: {[(m.name, m.type_name) for m in info.members]}")
+            print(f"  ports: {info.port_members}")
 
     return 0
 
