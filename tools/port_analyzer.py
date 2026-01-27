@@ -18,6 +18,46 @@ class ScannedFiles:
     implementations: list[Path] = field(default_factory=list)
 
 
+@dataclass
+class MemberInfo:
+    """A member variable in a class."""
+    name: str           # "EgiLruMgr"
+    type_name: str      # "EgiLruMgrCls"
+
+
+@dataclass
+class ClassInfo:
+    """Information about a C++ class."""
+    name: str                           # "EgiMgrCls"
+    header_path: Path | None = None     # Path to .h file
+    impl_path: Path | None = None       # Path to .cpp file
+    base_classes: list[str] = field(default_factory=list)   # Inherited interfaces
+    members: list[MemberInfo] = field(default_factory=list) # Component members
+    port_members: list[str] = field(default_factory=list)   # Its*Port* members
+
+
+@dataclass
+class PortConnection:
+    """A port connection between components."""
+    from_path: str      # "EgiMgr" (dotted path from partition root)
+    to_path: str        # "RadaltMgr.RadaltLruMgr"
+    interface: str      # "EgiExtDataIfc"
+
+
+@dataclass
+class ComponentNode:
+    """A node in the component hierarchy tree."""
+    name: str                   # "EgiMgr" (member name) or "root"
+    class_name: str             # "EgiMgrCls"
+    children: list['ComponentNode'] = field(default_factory=list)
+
+    def get_path(self, parent_path: str = "") -> str:
+        """Get dotted path from root."""
+        if parent_path:
+            return f"{parent_path}.{self.name}" if self.name != "root" else parent_path
+        return self.name if self.name != "root" else ""
+
+
 def scan_project(project_root: Path) -> ScannedFiles:
     """
     Scan project for C++ header and implementation files.
