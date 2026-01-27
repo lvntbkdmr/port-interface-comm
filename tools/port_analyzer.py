@@ -10,6 +10,9 @@ import sys
 from pathlib import Path
 from dataclasses import dataclass, field
 
+import tree_sitter_cpp as tscpp
+from tree_sitter import Language, Parser
+
 
 @dataclass
 class ScannedFiles:
@@ -56,6 +59,12 @@ class ComponentNode:
         if parent_path:
             return f"{parent_path}.{self.name}" if self.name != "root" else parent_path
         return self.name if self.name != "root" else ""
+
+
+def create_parser() -> Parser:
+    """Create and configure tree-sitter C++ parser."""
+    parser = Parser(Language(tscpp.language()))
+    return parser
 
 
 def scan_project(project_root: Path) -> ScannedFiles:
