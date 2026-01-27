@@ -19,3 +19,6 @@ compile_commands.json
 
 # Executables
 run_tests
+tools/.venv/
+tools/__pycache__/
+.cache/
