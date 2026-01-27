@@ -45,6 +45,7 @@ class PortConnection:
     from_path: str      # "EgiMgr" (dotted path from partition root)
     to_path: str        # "RadaltMgr.RadaltLruMgr"
     interface: str      # "EgiExtDataIfc"
+    unresolved: bool = False  # True if target couldn't be resolved
 
 
 @dataclass
@@ -73,56 +74,60 @@ def parse_header(parser: Parser, file_path: Path) -> ClassInfo | None:
 
     Returns ClassInfo or None if no class found.
     """
-    content = file_path.read_bytes()
-    tree = parser.parse(content)
-    root = tree.root_node
+    try:
+        content = file_path.read_bytes()
+        tree = parser.parse(content)
+        root = tree.root_node
 
-    # Find class_specifier node
-    class_node = None
-    for node in root.children:
-        if node.type == "class_specifier":
-            class_node = node
-            break
-        # Handle case where class is inside other constructs
-        for child in node.children:
-            if child.type == "class_specifier":
-                class_node = child
+        # Find class_specifier node
+        class_node = None
+        for node in root.children:
+            if node.type == "class_specifier":
+                class_node = node
                 break
+            # Handle case where class is inside other constructs
+            for child in node.children:
+                if child.type == "class_specifier":
+                    class_node = child
+                    break
 
-    if class_node is None:
+        if class_node is None:
+            return None
+
+        # Extract class name
+        class_name = None
+        base_classes = []
+        members = []
+        port_members = []
+
+        for child in class_node.children:
+            if child.type == "type_identifier":
+                class_name = content[child.start_byte:child.end_byte].decode()
+
+            elif child.type == "base_class_clause":
+                # Extract base classes
+                for base_child in child.children:
+                    if base_child.type == "type_identifier":
+                        base_name = content[base_child.start_byte:base_child.end_byte].decode()
+                        base_classes.append(base_name)
+
+            elif child.type == "field_declaration_list":
+                # Parse class body for members
+                _parse_class_body(content, child, members, port_members)
+
+        if class_name is None:
+            return None
+
+        return ClassInfo(
+            name=class_name,
+            header_path=file_path,
+            base_classes=base_classes,
+            members=members,
+            port_members=port_members,
+        )
+    except Exception as e:
+        print(f"Warning: Failed to parse {file_path}: {e}", file=sys.stderr)
         return None
-
-    # Extract class name
-    class_name = None
-    base_classes = []
-    members = []
-    port_members = []
-
-    for child in class_node.children:
-        if child.type == "type_identifier":
-            class_name = content[child.start_byte:child.end_byte].decode()
-
-        elif child.type == "base_class_clause":
-            # Extract base classes
-            for base_child in child.children:
-                if base_child.type == "type_identifier":
-                    base_name = content[base_child.start_byte:base_child.end_byte].decode()
-                    base_classes.append(base_name)
-
-        elif child.type == "field_declaration_list":
-            # Parse class body for members
-            _parse_class_body(content, child, members, port_members)
-
-    if class_name is None:
-        return None
-
-    return ClassInfo(
-        name=class_name,
-        header_path=file_path,
-        base_classes=base_classes,
-        members=members,
-        port_members=port_members,
-    )
 
 
 def _parse_class_body(
@@ -403,6 +408,129 @@ def _extract_assignment_wiring(expr_text: str) -> tuple[str, str] | None:
     return None
 
 
+def extract_interface_from_port(port_name: str) -> str:
+    """
+    Extract interface name from port naming pattern.
+
+    ItsDataOutPortEgiExtDataIfc -> EgiExtDataIfc
+    GetItsRadaltEgiInPortEgiExtDataIfc -> EgiExtDataIfc
+    """
+    # Find "Port" and take everything after it
+    if "Port" in port_name:
+        idx = port_name.rfind("Port")
+        interface = port_name[idx + 4:]  # Skip "Port"
+        # Remove trailing () if present
+        interface = interface.rstrip("()")
+        return interface
+    return "Unknown"
+
+
+def resolve_member_path(expr: str) -> str:
+    """
+    Convert getter expression to member path.
+
+    RadaltMgr.GetItsRadaltEgiInPortEgiExtDataIfc() -> RadaltMgr
+    EgiMgr.GetEgiLruMgr().SetIts... -> EgiMgr.EgiLruMgr
+    """
+    # Remove method calls, keep only member access
+    parts = []
+    current = ""
+
+    for char in expr:
+        if char == '.':
+            if current and not current.startswith("Get") and not current.startswith("Set"):
+                parts.append(current)
+            elif current.startswith("Get") and current.endswith("()"):
+                # Convert GetXxx() to Xxx (member accessor)
+                member = current[3:-2]  # Remove "Get" and "()"
+                parts.append(member)
+            current = ""
+        elif char == '(':
+            # End of identifier
+            if current and not current.startswith("Get") and not current.startswith("Set"):
+                parts.append(current)
+            current = current + char
+        elif char == ')':
+            current = current + char
+        else:
+            current = current + char
+
+    # Handle remaining
+    if current and not current.startswith("Get") and not current.startswith("Set"):
+        if not current.endswith(")"):
+            parts.append(current)
+
+    return ".".join(parts) if parts else expr
+
+
+def _path_exists_in_tree(tree: ComponentNode, path: str) -> bool:
+    """Check if a member path exists in the component tree."""
+    parts = path.split(".")
+    current = tree
+
+    for part in parts:
+        found = False
+        for child in current.children:
+            if child.name == part:
+                current = child
+                found = True
+                break
+        if not found:
+            return False
+
+    return True
+
+
+def collect_connections(
+    tree: ComponentNode,
+    registry: dict[str, ClassInfo],
+    parser: Parser,
+    parent_path: str = "",
+) -> list[PortConnection]:
+    """
+    Recursively collect all port connections from component tree.
+    """
+    connections = []
+    current_path = tree.get_path(parent_path)
+
+    info = registry.get(tree.class_name)
+    if info and info.impl_path:
+        wirings = parse_init_relations(parser, info.impl_path)
+
+        for setter, getter in wirings:
+            # Extract interface from setter/port name
+            interface = extract_interface_from_port(setter)
+
+            # Resolve from_path (who is calling the setter)
+            if "." in setter:
+                setter_parts = setter.split(".")
+                from_member = setter_parts[0]
+                from_path = f"{current_path}.{from_member}" if current_path else from_member
+            else:
+                from_path = current_path
+
+            # Resolve to_path (who is being connected)
+            to_member = resolve_member_path(getter)
+            to_path = f"{current_path}.{to_member}" if current_path else to_member
+
+            # Check if to_path is valid (exists in tree)
+            unresolved = not _path_exists_in_tree(tree, to_member)
+
+            connections.append(PortConnection(
+                from_path=from_path,
+                to_path=to_path,
+                interface=interface,
+                unresolved=unresolved,
+            ))
+
+    # Recurse into children
+    for child in tree.children:
+        child_path = tree.get_path(parent_path)
+        connections.extend(collect_connections(child, registry, parser, child_path))
+
+    return connections
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("Usage: python tools/port_analyzer.py <PartitionClassName>", file=sys.stderr)
@@ -413,6 +541,10 @@ def main() -> int:
 
     # Scan and build registry
     scanned = scan_project(project_root)
+    if not scanned.headers:
+        print("Error: No *Pkg directories found. Run from project root.", file=sys.stderr)
+        return 1
+
     parser = create_parser()
     registry = build_class_registry(parser, scanned)
 
@@ -421,14 +553,31 @@ def main() -> int:
         print(f"Error: Class '{partition_class}' not found in *Pkg/inc/*.h", file=sys.stderr)
         return 1
 
-    # Build and display hierarchy
+    # Build hierarchy
     tree = build_component_tree(partition_class, registry)
 
+    # Collect connections
+    connections = collect_connections(tree, registry, parser)
+
+    # Output
     print(f"Partition: {partition_class}")
     print("=" * (len(partition_class) + 11))
     print()
     print("Component Hierarchy:")
     print_component_tree(tree)
+    print()
+    print("Port Connections:")
+    if connections:
+        for conn in connections:
+            if conn.unresolved:
+                print(f"  {conn.from_path} --[{conn.interface}]--> ??? (unresolved: {conn.to_path})")
+            else:
+                print(f"  {conn.from_path} --[{conn.interface}]--> {conn.to_path}")
+    else:
+        print("  (none)")
+    print()
+    print("Legend:")
+    print("  A --[Interface]--> B  means A sends data to B via Interface")
 
     return 0
 
