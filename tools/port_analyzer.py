@@ -202,6 +202,34 @@ def scan_project(project_root: Path) -> ScannedFiles:
     return result
 
 
+def build_class_registry(
+    parser: Parser,
+    scanned: ScannedFiles,
+) -> dict[str, ClassInfo]:
+    """
+    Build a registry mapping class names to ClassInfo.
+
+    Also associates implementation files with their classes.
+    """
+    registry: dict[str, ClassInfo] = {}
+
+    # Parse all headers
+    for header in scanned.headers:
+        info = parse_header(parser, header)
+        if info:
+            registry[info.name] = info
+
+    # Associate implementation files
+    for impl in scanned.implementations:
+        # Implementation file name should match class name
+        # e.g., EgiMgrCls.cpp -> EgiMgrCls
+        stem = impl.stem
+        if stem in registry:
+            registry[stem].impl_path = impl
+
+    return registry
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("Usage: python tools/port_analyzer.py <PartitionClassName>", file=sys.stderr)
@@ -210,18 +238,20 @@ def main() -> int:
     partition_class = sys.argv[1]
     project_root = Path.cwd()
 
-    # Scan for files
+    # Scan and build registry
     scanned = scan_project(project_root)
     parser = create_parser()
+    registry = build_class_registry(parser, scanned)
 
-    # Parse all headers
-    for h in sorted(scanned.headers):
-        info = parse_header(parser, h)
-        if info:
-            print(f"{info.name}:")
-            print(f"  bases: {info.base_classes}")
-            print(f"  members: {[(m.name, m.type_name) for m in info.members]}")
-            print(f"  ports: {info.port_members}")
+    print(f"Registered {len(registry)} classes:")
+    for name, info in sorted(registry.items()):
+        impl = info.impl_path.name if info.impl_path else "none"
+        print(f"  {name} (impl: {impl})")
+
+    # Verify partition class exists
+    if partition_class not in registry:
+        print(f"Error: Class '{partition_class}' not found in *Pkg/inc/*.h", file=sys.stderr)
+        return 1
 
     return 0
 
