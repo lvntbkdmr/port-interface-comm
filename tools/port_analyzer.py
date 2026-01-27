@@ -230,6 +230,179 @@ def build_class_registry(
     return registry
 
 
+def build_component_tree(
+    class_name: str,
+    registry: dict[str, ClassInfo],
+    member_name: str = "root",
+) -> ComponentNode:
+    """
+    Recursively build component hierarchy tree.
+
+    Args:
+        class_name: The class to start from
+        registry: Class registry
+        member_name: Name of this node in parent (or "root")
+
+    Returns:
+        ComponentNode tree
+    """
+    node = ComponentNode(name=member_name, class_name=class_name)
+
+    info = registry.get(class_name)
+    if info is None:
+        return node
+
+    # Recurse into component members
+    for member in info.members:
+        if member.type_name in registry:
+            child = build_component_tree(member.type_name, registry, member.name)
+            node.children.append(child)
+
+    return node
+
+
+def print_component_tree(node: ComponentNode, indent: str = "", is_last: bool = True) -> None:
+    """Print component tree as ASCII art."""
+    # Determine prefix
+    if node.name == "root":
+        print(f"  {node.class_name}")
+        child_indent = ""
+    else:
+        connector = "└── " if is_last else "├── "
+        print(f"  {indent}{connector}{node.name}: {node.class_name}")
+        child_indent = indent + ("    " if is_last else "│   ")
+
+    # Print children
+    for i, child in enumerate(node.children):
+        print_component_tree(child, child_indent, i == len(node.children) - 1)
+
+
+def parse_init_relations(
+    parser: Parser,
+    impl_path: Path,
+) -> list[tuple[str, str]]:
+    """
+    Parse InitRelations() method to find port wirings.
+
+    Returns list of (setter_call, getter_call) tuples.
+    E.g., ("EgiMgr.SetItsDataOutPortEgiExtDataIfc", "RadaltMgr.GetItsRadaltEgiInPortEgiExtDataIfc()")
+    """
+    content = impl_path.read_bytes()
+    tree = parser.parse(content)
+    root = tree.root_node
+
+    wirings = []
+
+    # Find InitRelations function
+    for node in root.children:
+        if node.type == "function_definition":
+            # Check if this is InitRelations
+            func_name = _get_function_name(content, node)
+            if func_name and "InitRelations" in func_name:
+                # Parse the function body
+                wirings.extend(_parse_init_relations_body(content, node))
+
+    return wirings
+
+
+def _get_function_name(content: bytes, func_node) -> str | None:
+    """Extract function name from function_definition node."""
+    for child in func_node.children:
+        if child.type == "function_declarator":
+            for fc in child.children:
+                if fc.type == "qualified_identifier":
+                    return content[fc.start_byte:fc.end_byte].decode()
+                elif fc.type == "field_identifier":
+                    return content[fc.start_byte:fc.end_byte].decode()
+    return None
+
+
+def _parse_init_relations_body(content: bytes, func_node) -> list[tuple[str, str]]:
+    """Parse function body for port wirings."""
+    wirings = []
+
+    for child in func_node.children:
+        if child.type == "compound_statement":
+            for stmt in child.children:
+                wiring = _parse_statement_for_wiring(content, stmt)
+                if wiring:
+                    wirings.append(wiring)
+
+    return wirings
+
+
+def _parse_statement_for_wiring(content: bytes, stmt_node) -> tuple[str, str] | None:
+    """
+    Parse a statement to find port wiring patterns.
+
+    Patterns:
+    1. X.SetIts*Port*(Y.GetIts*Port*())
+    2. ItsX = Y.GetIts*Port*()
+    """
+    if stmt_node.type == "expression_statement":
+        for child in stmt_node.children:
+            return _parse_expression_for_wiring(content, child)
+    return None
+
+
+def _parse_expression_for_wiring(content: bytes, expr_node) -> tuple[str, str] | None:
+    """Parse expression for wiring pattern."""
+    expr_text = content[expr_node.start_byte:expr_node.end_byte].decode().strip()
+
+    # Pattern 1: Call expression with SetIts*Port*
+    if expr_node.type == "call_expression" and "SetIts" in expr_text and "Port" in expr_text:
+        # Extract the full call: Obj.SetIts*Port*(arg)
+        return _extract_setter_getter(expr_text)
+
+    # Pattern 2: Assignment with GetIts*Port*
+    if expr_node.type == "assignment_expression" and "GetIts" in expr_text and "Port" in expr_text:
+        return _extract_assignment_wiring(expr_text)
+
+    return None
+
+
+def _extract_setter_getter(expr_text: str) -> tuple[str, str] | None:
+    """
+    Extract setter and getter from: Obj.SetIts*Port*(Arg.GetIts*Port*())
+    """
+    import re
+
+    # Match: something.SetIts...Port...(...GetIts...Port...())
+    # Capture the object calling Set and the argument with Get
+    # Use .+ with greedy matching and anchor to end to handle nested parens
+    match = re.match(
+        r'([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\.(SetIts[A-Za-z0-9_]*Port[A-Za-z0-9_]*)\((.+)\)$',
+        expr_text.replace('\n', ' ').replace(' ', '')
+    )
+
+    if match:
+        setter_obj = match.group(1)
+        setter_method = match.group(2)
+        getter_expr = match.group(3)
+        return (f"{setter_obj}.{setter_method}", getter_expr)
+
+    return None
+
+
+def _extract_assignment_wiring(expr_text: str) -> tuple[str, str] | None:
+    """
+    Extract from: ItsX = Y.GetIts*Port*()
+    """
+    import re
+
+    match = re.match(
+        r'(Its[A-Za-z0-9_]*Port[A-Za-z0-9_]*)\s*=\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_()]*)+)',
+        expr_text.replace('\n', ' ')
+    )
+
+    if match:
+        port_member = match.group(1)
+        getter_expr = match.group(2)
+        return (port_member, getter_expr)
+
+    return None
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("Usage: python tools/port_analyzer.py <PartitionClassName>", file=sys.stderr)
@@ -243,15 +416,19 @@ def main() -> int:
     parser = create_parser()
     registry = build_class_registry(parser, scanned)
 
-    print(f"Registered {len(registry)} classes:")
-    for name, info in sorted(registry.items()):
-        impl = info.impl_path.name if info.impl_path else "none"
-        print(f"  {name} (impl: {impl})")
-
     # Verify partition class exists
     if partition_class not in registry:
         print(f"Error: Class '{partition_class}' not found in *Pkg/inc/*.h", file=sys.stderr)
         return 1
+
+    # Build and display hierarchy
+    tree = build_component_tree(partition_class, registry)
+
+    print(f"Partition: {partition_class}")
+    print("=" * (len(partition_class) + 11))
+    print()
+    print("Component Hierarchy:")
+    print_component_tree(tree)
 
     return 0
 
