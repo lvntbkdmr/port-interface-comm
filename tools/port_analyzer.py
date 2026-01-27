@@ -180,29 +180,26 @@ def scan_project(project_root: Path) -> ScannedFiles:
     """
     Scan project for C++ header and implementation files.
 
-    Searches for:
-    - *Pkg/inc/*.h (headers)
-    - *Pkg/src/*.cpp (implementations)
+    Recursively searches all directories for:
+    - *.h (headers)
+    - *.cpp (implementations)
+
+    Skips hidden directories, build directories, and third_party.
     """
     result = ScannedFiles()
 
-    for pkg_dir in project_root.glob("*Pkg"):
-        if not pkg_dir.is_dir():
+    skip_dirs = {'.git', '.claude', 'build', 'third_party', '__pycache__', 'node_modules'}
+
+    for item in project_root.rglob("*"):
+        # Skip files in directories we want to ignore
+        if any(skip in item.parts for skip in skip_dirs):
             continue
 
-        # Scan headers
-        inc_dir = pkg_dir / "inc"
-        if inc_dir.is_dir():
-            result.headers.extend(inc_dir.glob("*.h"))
-
-        # Also scan ExtPkg root for headers (interface packages)
-        if pkg_dir.name.endswith("ExtPkg"):
-            result.headers.extend(pkg_dir.glob("*.h"))
-
-        # Scan implementations
-        src_dir = pkg_dir / "src"
-        if src_dir.is_dir():
-            result.implementations.extend(src_dir.glob("*.cpp"))
+        if item.is_file():
+            if item.suffix == ".h":
+                result.headers.append(item)
+            elif item.suffix == ".cpp":
+                result.implementations.append(item)
 
     return result
 
@@ -542,7 +539,7 @@ def main() -> int:
     # Scan and build registry
     scanned = scan_project(project_root)
     if not scanned.headers:
-        print("Error: No *Pkg directories found. Run from project root.", file=sys.stderr)
+        print("Error: No .h files found. Run from project root.", file=sys.stderr)
         return 1
 
     parser = create_parser()
@@ -550,7 +547,7 @@ def main() -> int:
 
     # Verify partition class exists
     if partition_class not in registry:
-        print(f"Error: Class '{partition_class}' not found in *Pkg/inc/*.h", file=sys.stderr)
+        print(f"Error: Class '{partition_class}' not found in any .h file", file=sys.stderr)
         return 1
 
     # Build hierarchy
