@@ -2,6 +2,7 @@
 
 RadaltMgrCls::RadaltMgrCls(/* args */)
 {
+    InitRelations();
 }
 
 RadaltMgrCls::~RadaltMgrCls()
@@ -10,15 +11,22 @@ RadaltMgrCls::~RadaltMgrCls()
 
 void RadaltMgrCls::Initialize()
 {
+    RadaltLruMgr.Initialize();
 }
 
 void RadaltMgrCls::PeriodicRun()
 {
+    RadaltLruMgr.PeriodicRun();
+}
+
+void RadaltMgrCls::SetItsDataOutPortRadaltExtDataIfc(RadaltExtDataIfc* ifc)
+{
+    RadaltLruMgr.SetItsDataOutPortRadaltExtDataIfc(ifc);
 }
 
 EgiExtDataIfc * RadaltMgrCls::GetItsRadaltEgiInPortEgiExtDataIfc()
 {
-    return ItsRadaltEgiInPortEgiExtDataIfc;
+    return ItsItsRadaltEgiInPortEgiExtDataIfc;
 }
 
 void RadaltMgrCls::InitRelations()

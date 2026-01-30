@@ -1,4 +1,5 @@
 #include <RadaltLruMgrCls.h>
+#include <PortMacros.h>
 
 RadaltLruMgrCls::RadaltLruMgrCls()
 {
@@ -14,6 +15,10 @@ void RadaltLruMgrCls::Initialize()
 
 void RadaltLruMgrCls::PeriodicRun()
 {
+    RadaltExtDataType RadaltData;
+    RadaltData.altitudeField = 1;
+
+    OUT_PORT(DataOutPort, RadaltExtDataIfc)->SetRadaltExtData(RadaltData);
 }
 
 void RadaltLruMgrCls::SetEgiExtData(const EgiExtDataType& data)

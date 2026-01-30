@@ -15,7 +15,8 @@ public:
     void PeriodicRun();
 
     EgiExtDataIfc * GetItsRadaltEgiInPortEgiExtDataIfc();
-
+    
+    void SetItsDataOutPortRadaltExtDataIfc(RadaltExtDataIfc* ifc);
 
     void InitRelations();
 private:

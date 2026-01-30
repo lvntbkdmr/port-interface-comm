@@ -2,9 +2,13 @@
 #define EGIMGR_H
 
 #include <EgiLruMgrCls.h>
+#include <EgiCmpCls.h>
 #include <EgiExtDataIfc.h>
+#include <Ans611ControlIfc.h>
+#include <RadaltExtDataIfc.h>
 
-class EgiMgrCls
+class EgiMgrCls:
+    public RadaltExtDataIfc
 {
 private:
     /* data */
@@ -17,13 +21,21 @@ public:
 
     void InitRelations();
 
+    void SetRadaltExtData(const RadaltExtDataType& data) override;
+
     void SetItsDataOutPortEgiExtDataIfc(EgiExtDataIfc* ifc);
+
+    RadaltExtDataIfc* GetItsRadaltInPortRadaltExtDataIfc();
 
 private:
     EgiLruMgrCls EgiLruMgr;
+    EgiCmpCls Egi1Cmp;
+    EgiCmpCls Egi2Cmp;
 
 protected:
-    EgiExtDataIfc * ItsDataOutPortEgiExtDataIfc;
+    RadaltExtDataIfc* ItsEgi1RadaltInPortRadaltExtDataIfc;
+    RadaltExtDataIfc* ItsEgi2RadaltInPortRadaltExtDataIfc;
+
 };
 
 #endif

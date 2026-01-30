@@ -2,6 +2,7 @@
 #define RADALTLRUMGR_H
 
 #include <EgiExtDataIfc.h>
+#include <RadaltExtDataIfc.h>
 
 class RadaltLruMgrCls:
     public EgiExtDataIfc
@@ -17,7 +18,10 @@ public:
 
     EgiExtDataIfc * GetItsRadaltEgiInPortEgiExtDataIfc();
 
+    void SetItsDataOutPortRadaltExtDataIfc(RadaltExtDataIfc* ifc);
+
 private:
 protected:
+    RadaltExtDataIfc* ItsDataOutPortRadaltExtDataIfc;
 };
 #endif
