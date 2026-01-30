@@ -1228,12 +1228,63 @@ def _find_port_member_source(parser: Parser, impl_path: Path, port_member: str) 
     return None
 
 
-def main() -> int:
-    if len(sys.argv) != 2:
-        print("Usage: python tools/port_analyzer.py <PartitionClassName>", file=sys.stderr)
-        return 1
+def export_connections_json(
+    tree: ComponentNode,
+    connections: list[PortConnection],
+    registry: dict[str, ClassInfo],
+) -> dict:
+    """
+    Export connections and component info as JSON-serializable dict.
 
-    partition_class = sys.argv[1]
+    This can be used by other tools (like port_converter.py) to generate
+    code for the flat port mechanism.
+    """
+    def node_to_dict(node: ComponentNode, parent_path: str = "") -> dict:
+        path = f"{parent_path}.{node.name}" if parent_path else node.name
+        if node.name == "root":
+            path = ""
+
+        info = registry.get(node.class_name)
+        return {
+            "name": node.name,
+            "class_name": node.class_name,
+            "path": path.lstrip("."),
+            "header_path": str(info.header_path) if info and info.header_path else None,
+            "impl_path": str(info.impl_path) if info and info.impl_path else None,
+            "base_classes": info.base_classes if info else [],
+            "port_members": info.port_members if info else [],
+            "children": [node_to_dict(c, path) for c in node.children],
+        }
+
+    def conn_to_dict(conn: PortConnection) -> dict:
+        return {
+            "from_path": conn.from_path,
+            "to_path": conn.to_path,
+            "interface": conn.interface,
+            "unresolved": conn.unresolved,
+        }
+
+    return {
+        "component_tree": node_to_dict(tree),
+        "connections": [conn_to_dict(c) for c in connections],
+    }
+
+
+def main() -> int:
+    import argparse
+
+    parser_args = argparse.ArgumentParser(
+        description="Analyze port connections in C++ component-based systems"
+    )
+    parser_args.add_argument("partition_class", help="Name of the partition class to analyze")
+    parser_args.add_argument(
+        "--export-json",
+        metavar="FILE",
+        help="Export connections and component info to JSON file"
+    )
+
+    args = parser_args.parse_args()
+    partition_class = args.partition_class
     project_root = Path.cwd()
 
     # Scan and build registry
@@ -1284,6 +1335,14 @@ def main() -> int:
     print()
     print("Legend:")
     print("  A --> B  means A sends data to B via the interface in brackets")
+
+    # Export to JSON if requested
+    if args.export_json:
+        import json
+        export_data = export_connections_json(tree, connections, registry)
+        with open(args.export_json, 'w') as f:
+            json.dump(export_data, f, indent=2)
+        print(f"\nExported to: {args.export_json}")
 
     return 0
 
