@@ -3,13 +3,17 @@
 Port Converter - Convert OUT_PORT macro-based port connections to flat mechanism.
 
 This script reads the JSON export from port_analyzer.py and directly edits
-the C++ header and source files to add:
-1. Port member declarations (private section)
-2. Port setter declarations (public section)
-3. Component accessor declarations (public section)
-4. Port setter implementations (source file)
-5. Component accessor implementations (source file)
-6. InitRelations wiring code
+the C++ header and source files to:
+1. ADD: Port member declarations (private section)
+2. ADD: Port setter declarations (public section)
+3. ADD: Component accessor declarations (public section)
+4. ADD: Port setter implementations (source file)
+5. ADD: Component accessor implementations (source file)
+6. ADD: InitRelations wiring code
+7. REMOVE: Old GetIts*Port*Ifc() declarations and implementations
+8. REMOVE: Old SetIts*Port*Ifc() declarations and implementations
+9. REMOVE: Old Its*Port*Ifc member variables
+10. REMOVE: Old port delegation code in InitRelations
 
 Usage:
     python port_analyzer.py PartitionCls --export-json connections.json
@@ -294,26 +298,130 @@ def _build_accessor_chain(path_parts: list[str], tree: dict, prefix_parts: list[
 
 
 # ============================================================================
+# Old pattern removal
+# ============================================================================
+
+def remove_old_port_patterns_header(content: str, class_name: str) -> tuple[str, list[str]]:
+    """
+    Remove old-style port patterns from a header file.
+
+    Patterns removed:
+    - GetIts*Port*Ifc() declarations
+    - SetIts*Port*Ifc() declarations
+    - Its*Port*Ifc member variables
+
+    Returns (modified_content, list_of_removed_items)
+    """
+    removed = []
+
+    # Remove GetIts*Port*Ifc declarations
+    # Pattern: ReturnType* GetIts...Port...Ifc();
+    get_pattern = re.compile(r'^\s*\w+\s*\*\s*GetIts\w*Port\w*Ifc\s*\(\s*\)\s*;?\s*$', re.MULTILINE)
+    for match in get_pattern.finditer(content):
+        removed.append(f"Declaration: {match.group().strip()}")
+    content = get_pattern.sub('', content)
+
+    # Remove SetIts*Port*Ifc declarations
+    # Pattern: void SetIts...Port...Ifc(Type* param);
+    set_pattern = re.compile(r'^\s*void\s+[Ss]etIts\w*Port\w*Ifc\s*\([^)]+\)\s*;?\s*$', re.MULTILINE)
+    for match in set_pattern.finditer(content):
+        removed.append(f"Declaration: {match.group().strip()}")
+    content = set_pattern.sub('', content)
+
+    # Remove Its*Port*Ifc member variables
+    # Pattern: Type* Its...Port...Ifc;
+    member_pattern = re.compile(r'^\s*\w+\s*\*\s*Its\w*Port\w*Ifc\s*;?\s*$', re.MULTILINE)
+    for match in member_pattern.finditer(content):
+        removed.append(f"Member: {match.group().strip()}")
+    content = member_pattern.sub('', content)
+
+    # Clean up multiple blank lines
+    content = re.sub(r'\n{3,}', '\n\n', content)
+
+    return content, removed
+
+
+def remove_old_port_patterns_source(content: str, class_name: str) -> tuple[str, list[str]]:
+    """
+    Remove old-style port patterns from a source file.
+
+    Patterns removed:
+    - GetIts*Port*Ifc() implementations
+    - SetIts*Port*Ifc() implementations
+    - Its* = *.GetIts*Port*Ifc() assignments in InitRelations
+
+    Returns (modified_content, list_of_removed_items)
+    """
+    removed = []
+
+    # Remove GetIts*Port*Ifc implementations
+    # Pattern: ReturnType* ClassName::GetIts...Port...Ifc() { ... }
+    get_impl_pattern = re.compile(
+        rf'\w+\s*\*\s*{re.escape(class_name)}::GetIts\w*Port\w*Ifc\s*\(\s*\)\s*\{{[^}}]*\}}',
+        re.MULTILINE | re.DOTALL
+    )
+    for match in get_impl_pattern.finditer(content):
+        func_name = re.search(r'GetIts\w*Port\w*Ifc', match.group())
+        if func_name:
+            removed.append(f"Implementation: {class_name}::{func_name.group()}()")
+    content = get_impl_pattern.sub('', content)
+
+    # Remove SetIts*Port*Ifc implementations (may forward to child)
+    # Pattern: void ClassName::SetIts...Port...Ifc(...) { ... }
+    set_impl_pattern = re.compile(
+        rf'void\s+{re.escape(class_name)}::[Ss]etIts\w*Port\w*Ifc\s*\([^)]+\)\s*\{{[^}}]*\}}',
+        re.MULTILINE | re.DOTALL
+    )
+    for match in set_impl_pattern.finditer(content):
+        func_name = re.search(r'[Ss]etIts\w*Port\w*Ifc', match.group())
+        if func_name:
+            removed.append(f"Implementation: {class_name}::{func_name.group()}()")
+    content = set_impl_pattern.sub('', content)
+
+    # Remove old port delegation lines in InitRelations
+    # Pattern: Its...Port...Ifc = something.GetIts...Port...Ifc();
+    delegation_pattern = re.compile(r'^\s*Its\w*Port\w*Ifc\s*=\s*[^;]+\.GetIts\w*Port\w*Ifc\s*\(\s*\)\s*;?\s*$', re.MULTILINE)
+    for match in delegation_pattern.finditer(content):
+        removed.append(f"Delegation: {match.group().strip()}")
+    content = delegation_pattern.sub('', content)
+
+    # Remove OUT_PORT macro usages (they'll be replaced with direct member access)
+    # Pattern: OUT_PORT(PortName, Interface)->Method(args);
+    # Note: This is optional - user may want to handle this separately
+
+    # Clean up multiple blank lines
+    content = re.sub(r'\n{3,}', '\n\n', content)
+
+    return content, removed
+
+
+# ============================================================================
 # Header file editing
 # ============================================================================
 
-def edit_header_file(header_path: str, info: ClassGenInfo) -> tuple[str, str]:
+def edit_header_file(header_path: str, info: ClassGenInfo) -> tuple[str, str, list[str]]:
     """
-    Edit a header file to add port members, setters, and accessors.
+    Edit a header file to add port members, setters, and accessors,
+    and remove old-style port patterns.
 
-    Returns (original_content, modified_content)
+    Returns (original_content, modified_content, removed_items)
     """
     with open(header_path) as f:
         content = f.read()
 
     original = content
+    removed_items = []
+
+    # First, remove old port patterns
+    content, removed = remove_old_port_patterns_header(content, info.class_name)
+    removed_items.extend(removed)
 
     # Find the class definition
     class_pattern = rf'class\s+{re.escape(info.class_name)}\s*[^{{]*\{{'
     class_match = re.search(class_pattern, content)
     if not class_match:
         print(f"  Warning: Could not find class {info.class_name} in {header_path}")
-        return original, original
+        return original, content, removed_items  # Still return content with removals
 
     # Find sections in the class
     class_start = class_match.end()
@@ -357,8 +465,8 @@ def edit_header_file(header_path: str, info: ClassGenInfo) -> tuple[str, str]:
         if port.member_name not in existing_content:
             new_private_decls.append(f"    {member_decl}")
 
-    if not new_public_decls and not new_private_decls:
-        return original, original  # Nothing to add
+    if not new_public_decls and not new_private_decls and not removed_items:
+        return original, original, []  # Nothing changed
 
     # Find insertion points
     # Look for existing public/private sections
@@ -393,29 +501,38 @@ def edit_header_file(header_path: str, info: ClassGenInfo) -> tuple[str, str]:
             insertions.append((class_end, insert_text))
 
     # Apply insertions in reverse order (so positions stay valid)
-    insertions.sort(key=lambda x: x[0], reverse=True)
-    modified = content
-    for pos, text in insertions:
-        modified = modified[:pos] + text + modified[pos:]
+    if new_public_decls or new_private_decls:
+        insertions.sort(key=lambda x: x[0], reverse=True)
+        modified = content
+        for pos, text in insertions:
+            modified = modified[:pos] + text + modified[pos:]
+    else:
+        modified = content
 
-    return original, modified
+    return original, modified, removed_items
 
 
 # ============================================================================
 # Source file editing
 # ============================================================================
 
-def edit_source_file(impl_path: str, info: ClassGenInfo, statements: list[WiringStatement]) -> tuple[str, str]:
+def edit_source_file(impl_path: str, info: ClassGenInfo, statements: list[WiringStatement]) -> tuple[str, str, list[str]]:
     """
-    Edit a source file to add port setters, accessors, and InitRelations.
+    Edit a source file to add port setters, accessors, and InitRelations,
+    and remove old-style port patterns.
 
-    Returns (original_content, modified_content)
+    Returns (original_content, modified_content, removed_items)
     """
     with open(impl_path) as f:
         content = f.read()
 
     original = content
     additions = []
+    removed_items = []
+
+    # First, remove old port patterns
+    content, removed = remove_old_port_patterns_source(content, info.class_name)
+    removed_items.extend(removed)
 
     # Check what already exists
     existing = content
@@ -499,7 +616,7 @@ void {info.class_name}::{port.setter_name}({port.interface}* port)
         content += "\n// === Generated flat port mechanism ===\n"
         content += "\n".join(additions)
 
-    return original, content
+    return original, content, removed_items
 
 
 # ============================================================================
@@ -514,23 +631,33 @@ def generate_preview(info: ClassGenInfo, statements: list[WiringStatement]) -> s
     lines.append(f"CLASS: {info.class_name}")
     lines.append(f"{'='*60}")
 
+    # Show what will be REMOVED
+    lines.append(f"\n--- WILL REMOVE (old port patterns) ---")
+    lines.append(f"  Header: GetIts*Port*Ifc() declarations")
+    lines.append(f"  Header: SetIts*Port*Ifc() declarations")
+    lines.append(f"  Header: Its*Port*Ifc member variables")
+    lines.append(f"  Source: GetIts*Port*Ifc() implementations")
+    lines.append(f"  Source: SetIts*Port*Ifc() implementations")
+    lines.append(f"  Source: Its* = *.GetIts*Port*Ifc() delegations")
+
+    # Show what will be ADDED
     if info.ports:
-        lines.append(f"\n--- Port members (private) ---")
+        lines.append(f"\n--- WILL ADD: Port members (private) ---")
         for port in info.ports:
             lines.append(f"    {port.interface}* {port.member_name}{{nullptr}};")
 
     if info.ports:
-        lines.append(f"\n--- Port setters (public) ---")
+        lines.append(f"\n--- WILL ADD: Port setters (public) ---")
         for port in info.ports:
             lines.append(f"    void {port.setter_name}({port.interface}* port);")
 
     if info.accessors:
-        lines.append(f"\n--- Component accessors (public) ---")
+        lines.append(f"\n--- WILL ADD: Component accessors (public) ---")
         for acc in info.accessors:
             lines.append(f"    {acc.return_type}& {acc.method_name}();")
 
     if info.ports:
-        lines.append(f"\n--- Setter implementations ---")
+        lines.append(f"\n--- WILL ADD: Setter implementations ---")
         for port in info.ports:
             lines.append(f"void {info.class_name}::{port.setter_name}({port.interface}* port)")
             lines.append("{")
@@ -539,7 +666,7 @@ def generate_preview(info: ClassGenInfo, statements: list[WiringStatement]) -> s
             lines.append("")
 
     if info.accessors:
-        lines.append(f"\n--- Accessor implementations ---")
+        lines.append(f"\n--- WILL ADD: Accessor implementations ---")
         for acc in info.accessors:
             lines.append(f"{acc.return_type}& {info.class_name}::{acc.method_name}()")
             lines.append("{")
@@ -549,7 +676,7 @@ def generate_preview(info: ClassGenInfo, statements: list[WiringStatement]) -> s
 
     class_statements = [s for s in statements if s.parent_class == info.class_name]
     if class_statements:
-        lines.append(f"\n--- InitRelations wiring ---")
+        lines.append(f"\n--- WILL ADD: InitRelations wiring ---")
         for stmt in class_statements:
             lines.append(f"    // {stmt.comment}")
             lines.append(f"    {stmt.statement}")
@@ -633,7 +760,7 @@ def main() -> int:
 
         # Edit header file
         if info.header_path and Path(info.header_path).exists():
-            original, modified = edit_header_file(info.header_path, info)
+            original, modified, removed = edit_header_file(info.header_path, info)
             if original != modified:
                 if args.backup:
                     backup_path = info.header_path + ".bak"
@@ -642,12 +769,16 @@ def main() -> int:
                 Path(info.header_path).write_text(modified)
                 print(f"  Modified: {info.header_path}")
                 modified_files.append(info.header_path)
+                if removed:
+                    print(f"    Removed {len(removed)} old port patterns")
+                    for item in removed:
+                        print(f"      - {item}")
             else:
                 print(f"  Skipped: {info.header_path} (no changes needed)")
 
         # Edit source file
         if info.impl_path and Path(info.impl_path).exists():
-            original, modified = edit_source_file(info.impl_path, info, statements)
+            original, modified, removed = edit_source_file(info.impl_path, info, statements)
             if original != modified:
                 if args.backup:
                     backup_path = info.impl_path + ".bak"
@@ -656,6 +787,10 @@ def main() -> int:
                 Path(info.impl_path).write_text(modified)
                 print(f"  Modified: {info.impl_path}")
                 modified_files.append(info.impl_path)
+                if removed:
+                    print(f"    Removed {len(removed)} old port patterns")
+                    for item in removed:
+                        print(f"      - {item}")
             else:
                 print(f"  Skipped: {info.impl_path} (no changes needed)")
 
