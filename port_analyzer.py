@@ -1263,18 +1263,27 @@ def main() -> int:
     print("Component Hierarchy:")
     print_component_tree(tree)
     print()
-    print("Port Connections:")
+    print("Port Connections (grouped by interface):")
     if connections:
+        # Group connections by interface
+        from collections import defaultdict
+        by_interface: dict[str, list[PortConnection]] = defaultdict(list)
         for conn in connections:
-            if conn.unresolved:
-                print(f"  {conn.from_path} --[{conn.interface}]--> ??? (unresolved: {conn.to_path})")
-            else:
-                print(f"  {conn.from_path} --[{conn.interface}]--> {conn.to_path}")
+            by_interface[conn.interface].append(conn)
+
+        # Print grouped by interface
+        for interface in sorted(by_interface.keys()):
+            print(f"\n  [{interface}]")
+            for conn in by_interface[interface]:
+                if conn.unresolved:
+                    print(f"    {conn.from_path} --> ??? (unresolved: {conn.to_path})")
+                else:
+                    print(f"    {conn.from_path} --> {conn.to_path}")
     else:
         print("  (none)")
     print()
     print("Legend:")
-    print("  A --[Interface]--> B  means A sends data to B via Interface")
+    print("  A --> B  means A sends data to B via the interface in brackets")
 
     return 0
 
